@@ -1,65 +1,184 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+
+function generateId(): string {
+  return Math.random().toString(36).slice(2, 10);
+}
+
+const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+type Mode = 'dates' | 'weekdays';
+
+export default function HomePage() {
+  const router = useRouter();
+  const [title, setTitle] = useState('');
+  const [mode, setMode] = useState<Mode>('weekdays');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [selectedWeekdays, setSelectedWeekdays] = useState<Set<string>>(
+    new Set(['Mon', 'Tue', 'Wed', 'Thu', 'Fri'])
+  );
+  const [startTime, setStartTime] = useState('09:00');
+  const [endTime, setEndTime] = useState('17:00');
+
+  function toggleWeekday(day: string) {
+    setSelectedWeekdays(prev => {
+      const next = new Set(prev);
+      if (next.has(day)) next.delete(day);
+      else next.add(day);
+      return next;
+    });
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const id = generateId();
+    let qs: URLSearchParams;
+    if (mode === 'dates') {
+      qs = new URLSearchParams({ title, start: startDate, end: endDate, from: startTime, to: endTime });
+    } else {
+      const ordered = WEEKDAYS.filter(d => selectedWeekdays.has(d));
+      qs = new URLSearchParams({ title, weekdays: ordered.join(','), from: startTime, to: endTime });
+    }
+    router.push(`/event/${id}?${qs}`);
+  }
+
+  const inputClass =
+    'w-full min-w-0 rounded-lg border border-border bg-white px-3.5 py-2.5 text-sm text-foreground placeholder-muted focus:outline-none focus:ring-2 focus:ring-accent';
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <main className="flex flex-col items-center justify-center min-h-screen px-4 py-16">
+      <div className="w-full max-w-sm">
+        <div className="mb-10">
+          <p className="text-xs font-semibold tracking-widest text-accent uppercase mb-3">
+            meet in the middle
+          </p>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground leading-tight">
+            Find time that works for everyone.
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="mt-2 text-sm text-muted">
+            No login. No accounts. Just share a link.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1.5">
+              Event name
+            </label>
+            <input
+              type="text"
+              required
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Team standup, Book club, ..."
+              className={inputClass}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+          </div>
+
+          {/* Mode toggle */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1.5">
+              Dates
+            </label>
+            <div className="flex rounded-lg border border-border overflow-hidden mb-3">
+              <button
+                type="button"
+                onClick={() => setMode('weekdays')}
+                className={`flex-1 py-2 text-sm font-medium transition-colors ${
+                  mode === 'weekdays'
+                    ? 'bg-accent text-white'
+                    : 'bg-white text-muted hover:bg-surface'
+                }`}
+              >
+                Days of week
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode('dates')}
+                className={`flex-1 py-2 text-sm font-medium transition-colors border-l border-border ${
+                  mode === 'dates'
+                    ? 'bg-accent text-white'
+                    : 'bg-white text-muted hover:bg-surface'
+                }`}
+              >
+                Specific dates
+              </button>
+            </div>
+
+            {mode === 'dates' ? (
+              <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+                <input
+                  type="date"
+                  required
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className={inputClass}
+                />
+                <span className="text-xs text-muted select-none">to</span>
+                <input
+                  type="date"
+                  required
+                  value={endDate}
+                  min={startDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className={inputClass}
+                />
+              </div>
+            ) : (
+              <div className="flex gap-1.5">
+                {WEEKDAYS.map(day => (
+                  <button
+                    key={day}
+                    type="button"
+                    onClick={() => toggleWeekday(day)}
+                    className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-colors ${
+                      selectedWeekdays.has(day)
+                        ? 'bg-accent text-white'
+                        : 'bg-surface border border-border text-muted hover:border-accent hover:text-foreground'
+                    }`}
+                  >
+                    {day}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1.5">
+              Time of day
+            </label>
+            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+              <input
+                type="time"
+                required
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                className={inputClass}
+              />
+              <span className="text-xs text-muted select-none">to</span>
+              <input
+                type="time"
+                required
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+                className={inputClass}
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={mode === 'weekdays' && selectedWeekdays.size === 0}
+            className="w-full rounded-lg bg-accent text-white text-sm font-semibold py-2.5 mt-2 hover:bg-accent-hover transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+            Create event →
+          </button>
+        </form>
+      </div>
+    </main>
   );
 }
