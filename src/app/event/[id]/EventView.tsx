@@ -138,7 +138,7 @@ export default function EventView({ id }: { id: string }) {
         Three-row CSS grid: [panel headers] [tables] [panel footers]
         CSS grid makes each row the same height across both columns → perfect alignment.
       */}
-      <div className="flex-1 min-h-0 grid grid-cols-2 grid-rows-[auto_1fr_auto] gap-x-6">
+      <div className="flex-1 min-h-0 grid grid-cols-2 grid-rows-[auto_1fr_auto] gap-x-6 items-start">
 
         {/* Row 1 — Panel headers */}
         <div className="pb-3">

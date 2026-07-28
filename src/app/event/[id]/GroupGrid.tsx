@@ -27,7 +27,7 @@ export default function GroupGrid({
   }
 
   return (
-    <div className="min-h-0 overflow-auto border border-border rounded-sm select-none">
+    <div className="max-h-full overflow-auto border border-border rounded-sm select-none">
       <table className="w-full border-collapse table-fixed text-xs">
         <thead className="sticky top-0 z-10">
           <tr>
