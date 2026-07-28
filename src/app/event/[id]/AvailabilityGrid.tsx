@@ -1,25 +1,42 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 
 type Day = { key: string; label: string; sublabel?: string };
 type TimeSlot = { key: string; label: string };
+type Response = { name: string; slots: string[] };
 
 export default function AvailabilityGrid({
   days,
   timeSlots,
+  eventId,
+  responses,
 }: {
   days: Day[];
   timeSlots: TimeSlot[];
+  eventId: string;
+  responses: Response[];
 }) {
+  const saveResponse = useMutation(api.responses.save);
   const [name, setName] = useState('');
   const [mySlots, setMySlots] = useState(new Set<string>());
+  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
   const dragRef = useRef({ active: false, mode: 'select' as 'select' | 'deselect' });
   // Tracks the last cell touched so we can interpolate skipped rows on fast drags.
   const lastCellRef = useRef<{ dayIdx: number; timeIdx: number } | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
 
   const isEditing = name.trim().length > 0;
+  const canSave = isEditing && mySlots.size > 0 && !saving;
+
+  // Reset saved state when slots change.
+  function markSlotChange(fn: (prev: Set<string>) => Set<string>) {
+    setSaved(false);
+    setMySlots(fn);
+  }
 
   // Stop drag on release anywhere on the page.
   useEffect(() => {
@@ -56,7 +73,7 @@ export default function AvailabilityGrid({
   // column; otherwise just apply the single cell. This fills gaps from fast drags.
   function fillRange(dayIdx: number, timeIdx: number) {
     const last = lastCellRef.current;
-    setMySlots(prev => {
+    markSlotChange(prev => {
       const next = new Set(prev);
       const toggle = (sk: string) => {
         if (dragRef.current.mode === 'select') next.add(sk);
@@ -83,7 +100,7 @@ export default function AvailabilityGrid({
       mode: mySlots.has(slotKey) ? 'deselect' : 'select',
     };
     lastCellRef.current = { dayIdx, timeIdx };
-    setMySlots(prev => {
+    markSlotChange(prev => {
       const next = new Set(prev);
       if (dragRef.current.mode === 'select') next.add(slotKey);
       else next.delete(slotKey);
@@ -96,13 +113,21 @@ export default function AvailabilityGrid({
     fillRange(dayIdx, timeIdx);
   }
 
+  async function handleSave() {
+    if (!canSave) return;
+    setSaving(true);
+    await saveResponse({ eventId, name: name.trim(), slots: [...mySlots] });
+    setSaving(false);
+    setSaved(true);
+  }
+
   return (
     <div className="h-full flex flex-col">
       <div className="mb-4 flex flex-col sm:flex-row sm:items-center gap-3 shrink-0">
         <input
           type="text"
           value={name}
-          onChange={e => setName(e.target.value)}
+          onChange={e => { setName(e.target.value); setSaved(false); }}
           placeholder="Your name"
           className="bg-surface border border-border rounded-sm px-3 py-2 text-sm text-foreground placeholder-muted focus:outline-none focus:border-foreground transition-colors w-full sm:w-48"
         />
@@ -114,7 +139,7 @@ export default function AvailabilityGrid({
       </div>
 
       <div ref={gridRef} className="flex-1 min-h-0 overflow-auto border border-border rounded-sm select-none">
-        <table className="w-full border-collapse text-xs">
+        <table className="w-full border-collapse table-fixed text-xs">
           <thead className="sticky top-0 z-10">
             <tr>
               <th className="w-16 bg-surface border-b border-border" />
@@ -170,11 +195,23 @@ export default function AvailabilityGrid({
         </table>
       </div>
 
-      <p className="mt-2 text-xs text-muted h-4 shrink-0">
-        {mySlots.size > 0
-          ? `${mySlots.size} slot${mySlots.size !== 1 ? 's' : ''} selected`
-          : ''}
-      </p>
+      <div className="mt-3 flex items-center justify-between shrink-0">
+        <p className="text-xs text-muted">
+          {responses.length > 0
+            ? `${responses.length} person${responses.length !== 1 ? 's' : ''} responded`
+            : ''}
+        </p>
+        <div className="flex items-center gap-3">
+          {saved && <span className="text-xs text-accent">Saved!</span>}
+          <button
+            onClick={handleSave}
+            disabled={!canSave}
+            className="bg-accent hover:bg-accent-hover text-white text-xs font-semibold px-4 py-2 rounded-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {saving ? 'Saving…' : 'Save my availability'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

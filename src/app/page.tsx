@@ -2,10 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-
-function generateId(): string {
-  return Math.random().toString(36).slice(2, 10);
-}
+import { useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -48,10 +46,22 @@ function TimeSelect({ value, onChange, min, className }: { value: string; onChan
   );
 }
 
+function getDaysInRange(start: string, end: string): string[] {
+  const days: string[] = [];
+  const cur = new Date(start + 'T00:00:00');
+  const last = new Date(end + 'T00:00:00');
+  while (cur <= last) {
+    days.push(cur.toISOString().slice(0, 10));
+    cur.setDate(cur.getDate() + 1);
+  }
+  return days;
+}
+
 type Mode = 'dates' | 'weekdays';
 
 export default function HomePage() {
   const router = useRouter();
+  const createEvent = useMutation(api.events.create);
   const [title, setTitle] = useState('');
   const [mode, setMode] = useState<Mode>('weekdays');
   const [startDate, setStartDate] = useState('');
@@ -61,6 +71,7 @@ export default function HomePage() {
   );
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('17:00');
+  const [submitting, setSubmitting] = useState(false);
 
   function handleStartTimeChange(t: string) {
     setStartTime(t);
@@ -79,17 +90,14 @@ export default function HomePage() {
     });
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const id = generateId();
-    let qs: URLSearchParams;
-    if (mode === 'dates') {
-      qs = new URLSearchParams({ title, start: startDate, end: endDate, from: startTime, to: endTime });
-    } else {
-      const ordered = WEEKDAYS.filter(d => selectedWeekdays.has(d));
-      qs = new URLSearchParams({ title, weekdays: ordered.join(','), from: startTime, to: endTime });
-    }
-    router.push(`/event/${id}?${qs}`);
+    setSubmitting(true);
+    const days = mode === 'dates'
+      ? getDaysInRange(startDate, endDate)
+      : WEEKDAYS.filter(d => selectedWeekdays.has(d));
+    const id = await createEvent({ title, days, from: startTime, to: endTime });
+    router.push(`/event/${id}`);
   }
 
   const inputClass =
@@ -205,10 +213,10 @@ export default function HomePage() {
           <div className="lg:mt-auto">
             <button
               type="submit"
-              disabled={mode === 'weekdays' && selectedWeekdays.size === 0}
+              disabled={submitting || (mode === 'weekdays' && selectedWeekdays.size === 0)}
               className="w-full bg-accent hover:bg-accent-hover text-white font-semibold text-sm py-3 rounded-sm transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              Create event →
+              {submitting ? 'Creating…' : 'Create event →'}
             </button>
           </div>
 
