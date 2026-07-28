@@ -1,58 +1,33 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { useMutation } from 'convex/react';
-import { api } from '@/convex/_generated/api';
 
 type Day = { key: string; label: string; sublabel?: string };
 type TimeSlot = { key: string; label: string };
-type Response = { name: string; slots: string[] };
 
 export default function AvailabilityGrid({
   days,
   timeSlots,
-  eventId,
-  responses,
+  isActive,
+  onSlotsChange,
 }: {
   days: Day[];
   timeSlots: TimeSlot[];
-  eventId: string;
-  responses: Response[];
+  isActive: boolean;
+  onSlotsChange: (slots: Set<string>) => void;
 }) {
-  const saveResponse = useMutation(api.responses.save);
-  const [name, setName] = useState('');
   const [mySlots, setMySlots] = useState(new Set<string>());
-  const [saved, setSaved] = useState(false);
-  const [saving, setSaving] = useState(false);
   const dragRef = useRef({ active: false, mode: 'select' as 'select' | 'deselect' });
-  // Tracks the last cell touched so we can interpolate skipped rows on fast drags.
   const lastCellRef = useRef<{ dayIdx: number; timeIdx: number } | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
 
-  const isEditing = name.trim().length > 0;
-  const canSave = isEditing && mySlots.size > 0 && !saving;
-
-  // Reset saved state when slots change.
-  function markSlotChange(fn: (prev: Set<string>) => Set<string>) {
-    setSaved(false);
-    setMySlots(fn);
-  }
-
-  // Stop drag on release anywhere on the page.
   useEffect(() => {
-    const stop = () => {
-      dragRef.current.active = false;
-      lastCellRef.current = null;
-    };
+    const stop = () => { dragRef.current.active = false; lastCellRef.current = null; };
     window.addEventListener('mouseup', stop);
     window.addEventListener('touchend', stop);
-    return () => {
-      window.removeEventListener('mouseup', stop);
-      window.removeEventListener('touchend', stop);
-    };
+    return () => { window.removeEventListener('mouseup', stop); window.removeEventListener('touchend', stop); };
   }, []);
 
-  // Touch drag: identify cell under finger via elementFromPoint.
   useEffect(() => {
     const el = gridRef.current;
     if (!el) return;
@@ -69,11 +44,18 @@ export default function AvailabilityGrid({
     return () => el.removeEventListener('touchmove', onTouchMove);
   }, [days, timeSlots]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Apply all rows between lastCellRef and (dayIdx, timeIdx) when in the same
-  // column; otherwise just apply the single cell. This fills gaps from fast drags.
+  function updateSlots(fn: (prev: Set<string>) => Set<string>) {
+    setMySlots(prev => {
+      const next = fn(prev);
+      onSlotsChange(next);
+      return next;
+    });
+  }
+
+  // Fills gaps between lastCellRef and (dayIdx, timeIdx) during fast drags.
   function fillRange(dayIdx: number, timeIdx: number) {
     const last = lastCellRef.current;
-    markSlotChange(prev => {
+    updateSlots(prev => {
       const next = new Set(prev);
       const toggle = (sk: string) => {
         if (dragRef.current.mode === 'select') next.add(sk);
@@ -82,9 +64,7 @@ export default function AvailabilityGrid({
       if (last && last.dayIdx === dayIdx) {
         const lo = Math.min(last.timeIdx, timeIdx);
         const hi = Math.max(last.timeIdx, timeIdx);
-        for (let t = lo; t <= hi; t++) {
-          toggle(`${days[dayIdx].key}T${timeSlots[t].key}`);
-        }
+        for (let t = lo; t <= hi; t++) toggle(`${days[dayIdx].key}T${timeSlots[t].key}`);
       } else {
         toggle(`${days[dayIdx].key}T${timeSlots[timeIdx].key}`);
       }
@@ -94,13 +74,10 @@ export default function AvailabilityGrid({
   }
 
   function startDrag(dayIdx: number, timeIdx: number, slotKey: string) {
-    if (!isEditing) return;
-    dragRef.current = {
-      active: true,
-      mode: mySlots.has(slotKey) ? 'deselect' : 'select',
-    };
+    if (!isActive) return;
+    dragRef.current = { active: true, mode: mySlots.has(slotKey) ? 'deselect' : 'select' };
     lastCellRef.current = { dayIdx, timeIdx };
-    markSlotChange(prev => {
+    updateSlots(prev => {
       const next = new Set(prev);
       if (dragRef.current.mode === 'select') next.add(slotKey);
       else next.delete(slotKey);
@@ -113,101 +90,52 @@ export default function AvailabilityGrid({
     fillRange(dayIdx, timeIdx);
   }
 
-  async function handleSave() {
-    if (!canSave) return;
-    setSaving(true);
-    await saveResponse({ eventId, name: name.trim(), slots: [...mySlots] });
-    setSaving(false);
-    setSaved(true);
-  }
-
   return (
-    <div className="h-full flex flex-col">
-      <div className="mb-4 flex flex-col gap-1 shrink-0">
-        <span className="text-xs font-semibold text-muted uppercase tracking-widest">Your availability</span>
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-        <input
-          type="text"
-          value={name}
-          onChange={e => { setName(e.target.value); setSaved(false); }}
-          placeholder="Your name"
-          className="bg-surface border border-border rounded-sm px-3 py-2 text-sm text-foreground placeholder-muted focus:outline-none focus:border-foreground transition-colors w-full sm:w-48"
-        />
-        <p className="text-xs text-muted">
-          {isEditing
-            ? "Click or drag to mark when you're free"
-            : 'Enter your name to start marking availability'}
-        </p>
-      </div>
-      </div>
-
-      <div ref={gridRef} className="flex-1 min-h-0 overflow-auto border border-border rounded-sm select-none">
-        <table className="w-full border-collapse table-fixed text-xs">
-          <thead className="sticky top-0 z-10">
-            <tr>
-              <th className="w-16 bg-surface border-b border-border" />
-              {days.map(({ key, label, sublabel }) => (
-                <th
-                  key={key}
-                  className="bg-surface border-b border-l border-border py-2.5 px-3 text-center font-medium text-foreground"
-                >
-                  {sublabel ? (
-                    <>
-                      <div className="text-muted font-normal">{label}</div>
-                      <div>{sublabel}</div>
-                    </>
-                  ) : (
-                    <div>{label}</div>
-                  )}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {timeSlots.map(({ key: time, label }, timeIdx) => (
-              <tr key={time} className={time.endsWith(':00') ? 'border-t border-border' : ''}>
-                <td className="w-16 pr-3 text-right text-muted border-r border-border h-7 align-middle whitespace-nowrap">
-                  {label}
-                </td>
-                {days.map(({ key: day }, dayIdx) => {
-                  const slotKey = `${day}T${time}`;
-                  const selected = mySlots.has(slotKey);
-                  return (
-                    <td
-                      key={slotKey}
-                      data-di={dayIdx}
-                      data-ti={timeIdx}
-                      className={[
-                        'border-l border-border h-7 transition-colors',
-                        selected
-                          ? 'bg-accent'
-                          : isEditing
-                            ? 'bg-background hover:bg-accent/10'
-                            : 'bg-background',
-                        isEditing ? 'cursor-pointer' : 'cursor-default',
-                      ].join(' ')}
-                      onMouseDown={e => { e.preventDefault(); startDrag(dayIdx, timeIdx, slotKey); }}
-                      onMouseEnter={() => continueDrag(dayIdx, timeIdx)}
-                      onTouchStart={e => { e.preventDefault(); startDrag(dayIdx, timeIdx, slotKey); }}
-                    />
-                  );
-                })}
-              </tr>
+    <div ref={gridRef} className="min-h-0 overflow-auto border border-border rounded-sm select-none">
+      <table className="w-full border-collapse table-fixed text-xs">
+        <thead className="sticky top-0 z-10">
+          <tr>
+            <th className="w-16 bg-surface border-b border-border" />
+            {days.map(({ key, label, sublabel }) => (
+              <th key={key} className="bg-surface border-b border-l border-border py-2.5 px-3 text-center font-medium text-foreground">
+                {sublabel ? (
+                  <><div className="text-muted font-normal">{label}</div><div>{sublabel}</div></>
+                ) : (
+                  <div>{label}</div>
+                )}
+              </th>
             ))}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="mt-3 flex items-center justify-end gap-3 shrink-0">
-        {saved && <span className="text-xs text-accent">Saved!</span>}
-        <button
-          onClick={handleSave}
-          disabled={!canSave}
-          className="bg-accent hover:bg-accent-hover text-white text-xs font-semibold px-4 py-2 rounded-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          {saving ? 'Saving…' : 'Save my availability'}
-        </button>
-      </div>
+          </tr>
+        </thead>
+        <tbody>
+          {timeSlots.map(({ key: time, label }, timeIdx) => (
+            <tr key={time} className={time.endsWith(':00') ? 'border-t border-border' : ''}>
+              <td className="w-16 pr-3 text-right text-muted border-r border-border h-7 align-middle whitespace-nowrap">
+                {label}
+              </td>
+              {days.map(({ key: day }, dayIdx) => {
+                const slotKey = `${day}T${time}`;
+                const selected = mySlots.has(slotKey);
+                return (
+                  <td
+                    key={slotKey}
+                    data-di={dayIdx}
+                    data-ti={timeIdx}
+                    className={[
+                      'border-l border-border h-7 transition-colors',
+                      selected ? 'bg-accent' : isActive ? 'bg-background hover:bg-accent/10' : 'bg-background',
+                      isActive ? 'cursor-pointer' : 'cursor-default',
+                    ].join(' ')}
+                    onMouseDown={e => { e.preventDefault(); startDrag(dayIdx, timeIdx, slotKey); }}
+                    onMouseEnter={() => continueDrag(dayIdx, timeIdx)}
+                    onTouchStart={e => { e.preventDefault(); startDrag(dayIdx, timeIdx, slotKey); }}
+                  />
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
