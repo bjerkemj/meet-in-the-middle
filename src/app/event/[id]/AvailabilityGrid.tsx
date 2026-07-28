@@ -97,14 +97,14 @@ export default function AvailabilityGrid({
   }
 
   return (
-    <div>
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center gap-3">
+    <div className="h-full flex flex-col">
+      <div className="mb-4 flex flex-col sm:flex-row sm:items-center gap-3 shrink-0">
         <input
           type="text"
           value={name}
           onChange={e => setName(e.target.value)}
           placeholder="Your name"
-          className="rounded-lg border border-border bg-white px-3.5 py-2.5 text-sm text-foreground placeholder-muted focus:outline-none focus:ring-2 focus:ring-accent w-full sm:w-48"
+          className="bg-surface border border-border rounded-sm px-3 py-2 text-sm text-foreground placeholder-muted focus:outline-none focus:border-foreground transition-colors w-full sm:w-48"
         />
         <p className="text-xs text-muted">
           {isEditing
@@ -113,9 +113,9 @@ export default function AvailabilityGrid({
         </p>
       </div>
 
-      <div ref={gridRef} className="overflow-x-auto rounded-xl border border-border select-none">
+      <div ref={gridRef} className="flex-1 min-h-0 overflow-auto border border-border rounded-sm select-none">
         <table className="w-full border-collapse text-xs">
-          <thead>
+          <thead className="sticky top-0 z-10">
             <tr>
               <th className="w-16 bg-surface border-b border-border" />
               {days.map(({ key, label, sublabel }) => (
@@ -154,8 +154,8 @@ export default function AvailabilityGrid({
                         selected
                           ? 'bg-accent'
                           : isEditing
-                            ? 'bg-surface hover:bg-accent/20'
-                            : 'bg-surface',
+                            ? 'bg-background hover:bg-accent/10'
+                            : 'bg-background',
                         isEditing ? 'cursor-pointer' : 'cursor-default',
                       ].join(' ')}
                       onMouseDown={e => { e.preventDefault(); startDrag(dayIdx, timeIdx, slotKey); }}
@@ -170,7 +170,7 @@ export default function AvailabilityGrid({
         </table>
       </div>
 
-      <p className="mt-3 text-xs text-muted h-4">
+      <p className="mt-2 text-xs text-muted h-4 shrink-0">
         {mySlots.size > 0
           ? `${mySlots.size} slot${mySlots.size !== 1 ? 's' : ''} selected`
           : ''}

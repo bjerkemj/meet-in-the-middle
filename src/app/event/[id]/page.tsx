@@ -33,10 +33,7 @@ function formatDay(dateStr: string) {
 }
 
 function formatTime(timeStr: string): string {
-  const [h, m] = timeStr.split(':').map(Number);
-  const period = h >= 12 ? 'PM' : 'AM';
-  const hour = h % 12 || 12;
-  return `${hour}:${String(m).padStart(2, '0')} ${period}`;
+  return timeStr;
 }
 
 type SearchParams = Promise<{
@@ -99,22 +96,24 @@ export default async function EventPage({
       })();
 
   return (
-    <main className="min-h-screen px-4 py-12 bg-background">
-      <div className="max-w-3xl mx-auto">
+    <main className="h-dvh flex flex-col overflow-hidden px-6 py-8 max-w-3xl mx-auto">
 
-        <div className="mb-8">
-          <p className="text-xs font-semibold tracking-widest text-accent uppercase mb-4">
-            meet in the middle
-          </p>
-          <h1 className="text-2xl font-bold text-foreground">{title}</h1>
-          <p className="text-sm text-muted mt-1">
-            {rangeLabel}{'  ·  '}{formatTime(from)} – {formatTime(to)}
-          </p>
-        </div>
-
-        <AvailabilityGrid days={days} timeSlots={timeSlots} />
-
+      <div className="mb-6 shrink-0">
+        <span className="text-sm font-semibold tracking-tight text-foreground">
+          meet<span className="text-accent">.</span>in<span className="text-accent">.</span>the<span className="text-accent">.</span>middle
+        </span>
+        <h1 className="mt-4 text-3xl font-bold tracking-tight text-foreground leading-tight">
+          {title}
+        </h1>
+        <p className="mt-1.5 text-sm text-muted">
+          {rangeLabel}{'  ·  '}{formatTime(from)} – {formatTime(to)}
+        </p>
       </div>
+
+      <div className="flex-1 min-h-0">
+        <AvailabilityGrid days={days} timeSlots={timeSlots} />
+      </div>
+
     </main>
   );
 }
