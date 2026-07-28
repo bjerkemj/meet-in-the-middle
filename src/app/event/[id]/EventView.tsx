@@ -110,28 +110,26 @@ export default function EventView({ id }: { id: string }) {
 
       {/* Page header */}
       <div className="shrink-0 mb-5">
-        <div className="flex items-center justify-between gap-6">
-          <span className="text-sm font-semibold tracking-tight text-foreground shrink-0">
-            meet<span className="text-accent">.</span>in<span className="text-accent">.</span>the<span className="text-accent">.</span>middle
-          </span>
-          <div className="flex items-center gap-2 bg-surface border border-border rounded-sm px-3 py-1.5 min-w-0 flex-1 max-w-sm">
-            <span className="text-xs text-muted font-mono truncate flex-1 min-w-0 select-all">
-              {pageUrl}
-            </span>
-            <button
-              onClick={copyLink}
-              className="shrink-0 text-xs font-semibold transition-colors text-accent hover:text-accent-hover"
-            >
-              {copied ? 'Copied!' : 'Copy link'}
-            </button>
-          </div>
-        </div>
+        <span className="text-sm font-semibold tracking-tight text-foreground">
+          meet<span className="text-accent">.</span>in<span className="text-accent">.</span>the<span className="text-accent">.</span>middle
+        </span>
         <h1 className="mt-4 text-3xl font-bold tracking-tight text-foreground leading-tight">
           {event.title}
         </h1>
         <p className="mt-1 text-sm text-muted">
           {rangeLabel}{'  ·  '}{event.from} – {event.to}
         </p>
+        <div className="mt-3 inline-flex items-center gap-2 bg-surface border border-border rounded-sm px-3 py-1.5 max-w-xs">
+          <span className="text-xs text-muted font-mono truncate min-w-0 select-all">
+            {pageUrl}
+          </span>
+          <button
+            onClick={copyLink}
+            className="shrink-0 text-xs font-semibold transition-colors text-accent hover:text-accent-hover"
+          >
+            {copied ? 'Copied!' : 'Copy link'}
+          </button>
+        </div>
       </div>
 
       {/*
