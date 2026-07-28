@@ -123,7 +123,9 @@ export default function AvailabilityGrid({
 
   return (
     <div className="h-full flex flex-col">
-      <div className="mb-4 flex flex-col sm:flex-row sm:items-center gap-3 shrink-0">
+      <div className="mb-4 flex flex-col gap-1 shrink-0">
+        <span className="text-xs font-semibold text-muted uppercase tracking-widest">Your availability</span>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
         <input
           type="text"
           value={name}
@@ -136,6 +138,7 @@ export default function AvailabilityGrid({
             ? "Click or drag to mark when you're free"
             : 'Enter your name to start marking availability'}
         </p>
+      </div>
       </div>
 
       <div ref={gridRef} className="flex-1 min-h-0 overflow-auto border border-border rounded-sm select-none">
@@ -195,22 +198,15 @@ export default function AvailabilityGrid({
         </table>
       </div>
 
-      <div className="mt-3 flex items-center justify-between shrink-0">
-        <p className="text-xs text-muted">
-          {responses.length > 0
-            ? `${responses.length} person${responses.length !== 1 ? 's' : ''} responded`
-            : ''}
-        </p>
-        <div className="flex items-center gap-3">
-          {saved && <span className="text-xs text-accent">Saved!</span>}
-          <button
-            onClick={handleSave}
-            disabled={!canSave}
-            className="bg-accent hover:bg-accent-hover text-white text-xs font-semibold px-4 py-2 rounded-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {saving ? 'Saving…' : 'Save my availability'}
-          </button>
-        </div>
+      <div className="mt-3 flex items-center justify-end gap-3 shrink-0">
+        {saved && <span className="text-xs text-accent">Saved!</span>}
+        <button
+          onClick={handleSave}
+          disabled={!canSave}
+          className="bg-accent hover:bg-accent-hover text-white text-xs font-semibold px-4 py-2 rounded-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          {saving ? 'Saving…' : 'Save my availability'}
+        </button>
       </div>
     </div>
   );

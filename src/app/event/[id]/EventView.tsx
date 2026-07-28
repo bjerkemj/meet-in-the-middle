@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import AvailabilityGrid from './AvailabilityGrid';
+import GroupGrid from './GroupGrid';
 
 function getTimeSlots(startTime: string, endTime: string): { key: string; label: string }[] {
   const slots: { key: string; label: string }[] = [];
@@ -77,7 +78,7 @@ export default function EventView({ id }: { id: string }) {
     : event.days.join(', ');
 
   return (
-    <main className="h-dvh flex flex-col overflow-hidden px-6 py-8 max-w-3xl mx-auto">
+    <main className="h-dvh flex flex-col overflow-hidden px-6 py-8 max-w-6xl mx-auto">
 
       <div className="mb-6 shrink-0">
         <span className="text-sm font-semibold tracking-tight text-foreground">
@@ -102,11 +103,16 @@ export default function EventView({ id }: { id: string }) {
         </div>
       </div>
 
-      <div className="flex-1 min-h-0">
+      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 gap-8">
         <AvailabilityGrid
           days={days}
           timeSlots={timeSlots}
           eventId={id}
+          responses={responses ?? []}
+        />
+        <GroupGrid
+          days={days}
+          timeSlots={timeSlots}
           responses={responses ?? []}
         />
       </div>
