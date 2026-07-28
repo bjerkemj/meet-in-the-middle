@@ -148,7 +148,7 @@ export default function EventView({ id }: { id: string }) {
             <input
               type="text"
               value={name}
-              onChange={e => { setName(e.target.value); setSaved(false); }}
+              onChange={e => setName(e.target.value)}
               placeholder="Your name"
               className={inputClass}
             />
