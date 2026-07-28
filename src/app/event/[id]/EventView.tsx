@@ -36,9 +36,8 @@ export default function EventView({ id }: { id: string }) {
   const [pageUrl, setPageUrl] = useState('');
   const [copied, setCopied] = useState(false);
   const [name, setName] = useState('');
-  const [hasSlots, setHasSlots] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [slotsVersion, setSlotsVersion] = useState(0);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const latestSlotsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => { setPageUrl(window.location.href); }, []);
@@ -51,19 +50,23 @@ export default function EventView({ id }: { id: string }) {
 
   function handleSlotsChange(slots: Set<string>) {
     latestSlotsRef.current = slots;
-    setHasSlots(slots.size > 0);
-    setSaved(false);
+    setSlotsVersion(v => v + 1);
   }
 
-  async function handleSave() {
-    if (!name.trim() || !hasSlots || saving) return;
-    setSaving(true);
-    await saveResponse({ eventId: id, name: name.trim(), slots: [...latestSlotsRef.current] });
-    setSaving(false);
-    setSaved(true);
-  }
+  // Auto-save 800 ms after the last change, as long as a name is set.
+  useEffect(() => {
+    if (!name.trim() || latestSlotsRef.current.size === 0) {
+      setSaveStatus('idle');
+      return;
+    }
+    setSaveStatus('saving');
+    const timer = setTimeout(async () => {
+      await saveResponse({ eventId: id, name: name.trim(), slots: [...latestSlotsRef.current] });
+      setSaveStatus('saved');
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [slotsVersion, name]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const canSave = !!name.trim() && hasSlots && !saving;
   const isActive = !!name.trim();
 
   const inputClass = 'bg-surface border border-border rounded-sm px-3 py-2 text-sm text-foreground placeholder-muted focus:outline-none focus:border-foreground transition-colors w-full sm:w-48';
@@ -179,18 +182,12 @@ export default function EventView({ id }: { id: string }) {
         />
 
         {/* Row 3 — Footers */}
-        <div className="pt-3 flex items-center justify-end gap-3">
-          {saved && <span className="text-xs text-accent">Saved!</span>}
-          <button
-            onClick={handleSave}
-            disabled={!canSave}
-            className="bg-accent hover:bg-accent-hover text-white text-xs font-semibold px-4 py-2 rounded-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {saving ? 'Saving…' : 'Save my availability'}
-          </button>
+        <div className="pt-2 flex items-center justify-end">
+          {saveStatus === 'saving' && <span className="text-xs text-muted">Saving…</span>}
+          {saveStatus === 'saved'  && <span className="text-xs text-accent">Saved</span>}
         </div>
 
-        <div className="pt-3" />
+        <div className="pt-2" />
 
       </div>
     </main>

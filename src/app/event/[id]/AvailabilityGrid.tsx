@@ -45,12 +45,12 @@ export default function AvailabilityGrid({
   }, [days, timeSlots]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function updateSlots(fn: (prev: Set<string>) => Set<string>) {
-    setMySlots(prev => {
-      const next = fn(prev);
-      onSlotsChange(next);
-      return next;
-    });
+    setMySlots(fn);
   }
+
+  useEffect(() => {
+    onSlotsChange(mySlots);
+  }, [mySlots]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fills gaps between lastCellRef and (dayIdx, timeIdx) during fast drags.
   function fillRange(dayIdx: number, timeIdx: number) {
