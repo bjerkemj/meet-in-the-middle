@@ -46,7 +46,7 @@ export default function GroupGrid({
         <tbody>
           {timeSlots.map(({ key: time, label }) => (
             <tr key={time} className={time.endsWith(':00') ? 'border-t border-border' : ''}>
-              <td className="w-16 pr-3 text-right text-muted border-r border-border h-7 align-middle whitespace-nowrap">
+              <td className="w-16 pr-3 text-right text-muted border-r border-border h-5 align-middle whitespace-nowrap">
                 {label}
               </td>
               {days.map(({ key: day }) => {
@@ -56,7 +56,7 @@ export default function GroupGrid({
                 return (
                   <td
                     key={slotKey}
-                    className="border-l border-border h-7 relative"
+                    className="border-l border-border h-5 relative"
                     style={opacity > 0 ? { backgroundColor: `rgba(249, 115, 22, ${opacity})` } : undefined}
                     onMouseEnter={() => setHoveredSlot(slotKey)}
                     onMouseLeave={() => setHoveredSlot(null)}

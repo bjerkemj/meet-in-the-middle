@@ -110,7 +110,7 @@ export default function AvailabilityGrid({
         <tbody>
           {timeSlots.map(({ key: time, label }, timeIdx) => (
             <tr key={time} className={time.endsWith(':00') ? 'border-t border-border' : ''}>
-              <td className="w-16 pr-3 text-right text-muted border-r border-border h-7 align-middle whitespace-nowrap">
+              <td className="w-16 pr-3 text-right text-muted border-r border-border h-5 align-middle whitespace-nowrap">
                 {label}
               </td>
               {days.map(({ key: day }, dayIdx) => {
@@ -122,7 +122,7 @@ export default function AvailabilityGrid({
                     data-di={dayIdx}
                     data-ti={timeIdx}
                     className={[
-                      'border-l border-border h-7 transition-colors',
+                      'border-l border-border h-5 transition-colors',
                       selected ? 'bg-accent' : isActive ? 'bg-background hover:bg-accent/10' : 'bg-background',
                       isActive ? 'cursor-pointer' : 'cursor-default',
                     ].join(' ')}
