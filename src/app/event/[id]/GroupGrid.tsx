@@ -52,12 +52,12 @@ export default function GroupGrid({
               {days.map(({ key: day }) => {
                 const slotKey = `${day}T${time}`;
                 const names = slotMap.get(slotKey) ?? [];
-                const opacity = total > 0 ? names.length / total : 0;
+                const ratio = total > 0 ? names.length / total : 0;
                 return (
                   <td
                     key={slotKey}
                     className="border-l border-border h-5 relative"
-                    style={opacity > 0 ? { backgroundColor: `rgba(249, 115, 22, ${opacity})` } : undefined}
+                    style={ratio > 0 ? { backgroundColor: `rgba(249, 115, 22, ${ratio})` } : undefined}
                     onMouseEnter={() => setHoveredSlot(slotKey)}
                     onMouseLeave={() => setHoveredSlot(null)}
                   >

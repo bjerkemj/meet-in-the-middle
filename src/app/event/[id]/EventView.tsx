@@ -38,6 +38,7 @@ export default function EventView({ id }: { id: string }) {
   const [name, setName] = useState('');
   const [slotsVersion, setSlotsVersion] = useState(0);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [activeTab, setActiveTab] = useState<'mine' | 'group'>('mine');
   const latestSlotsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => { setPageUrl(window.location.href); }, []);
@@ -135,14 +136,30 @@ export default function EventView({ id }: { id: string }) {
         </div>
       </div>
 
+      {/* Tab toggle — mobile only */}
+      <div className="sm:hidden shrink-0 flex mb-3 rounded-sm border border-border overflow-hidden">
+        <button
+          className={`flex-1 py-2 text-xs font-semibold transition-colors ${activeTab === 'mine' ? 'bg-accent text-background' : 'bg-surface text-muted'}`}
+          onClick={() => setActiveTab('mine')}
+        >
+          Your availability
+        </button>
+        <button
+          className={`flex-1 py-2 text-xs font-semibold transition-colors ${activeTab === 'group' ? 'bg-accent text-background' : 'bg-surface text-muted'}`}
+          onClick={() => setActiveTab('group')}
+        >
+          Group
+        </button>
+      </div>
+
       {/*
-        Three-row CSS grid: [panel headers] [tables] [panel footers]
-        CSS grid makes each row the same height across both columns → perfect alignment.
+        Three-row CSS grid on desktop: [panel headers] [tables] [panel footers]
+        On mobile: flex-col with tab toggle hiding the inactive panel.
       */}
-      <div className="flex-1 min-h-0 grid grid-cols-2 grid-rows-[auto_1fr_auto] gap-x-6 items-start">
+      <div className="flex-1 min-h-0 flex flex-col overflow-y-auto sm:overflow-visible sm:grid sm:grid-cols-2 sm:grid-rows-[auto_1fr_auto] sm:gap-x-6 sm:items-start">
 
         {/* Row 1 — Panel headers */}
-        <div className="pb-3">
+        <div className={`pb-3 ${activeTab !== 'mine' ? 'hidden sm:block' : ''}`}>
           <span className={labelClass}>Your availability</span>
           <div className="mt-2 flex items-center gap-3">
             <input
@@ -158,7 +175,7 @@ export default function EventView({ id }: { id: string }) {
           </div>
         </div>
 
-        <div className="pb-3">
+        <div className={`pb-3 ${activeTab !== 'group' ? 'hidden sm:block' : ''}`}>
           <span className={labelClass}>Group availability</span>
           <p className="mt-2 text-xs text-muted" style={{ lineHeight: '2.25rem' }}>
             {respondents.length > 0
@@ -168,26 +185,30 @@ export default function EventView({ id }: { id: string }) {
         </div>
 
         {/* Row 2 — Tables (fills remaining height) */}
-        <AvailabilityGrid
-          days={days}
-          timeSlots={timeSlots}
-          isActive={isActive}
-          onSlotsChange={handleSlotsChange}
-        />
+        <div className={activeTab !== 'mine' ? 'hidden sm:contents' : 'sm:contents'}>
+          <AvailabilityGrid
+            days={days}
+            timeSlots={timeSlots}
+            isActive={isActive}
+            onSlotsChange={handleSlotsChange}
+          />
+        </div>
 
-        <GroupGrid
-          days={days}
-          timeSlots={timeSlots}
-          responses={respondents}
-        />
+        <div className={activeTab !== 'group' ? 'hidden sm:contents' : 'sm:contents'}>
+          <GroupGrid
+            days={days}
+            timeSlots={timeSlots}
+            responses={respondents}
+          />
+        </div>
 
         {/* Row 3 — Footers */}
-        <div className="pt-2 flex items-center justify-end">
+        <div className={`pt-2 ${activeTab !== 'mine' ? 'hidden sm:flex' : 'flex'} items-center justify-end`}>
           {saveStatus === 'saving' && <span className="text-xs text-muted">Saving…</span>}
           {saveStatus === 'saved'  && <span className="text-xs text-accent">Saved</span>}
         </div>
 
-        <div className="pt-2" />
+        <div className={`pt-2 ${activeTab !== 'group' ? 'hidden sm:block' : ''}`} />
 
       </div>
     </main>
